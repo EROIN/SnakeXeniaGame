@@ -1,0 +1,541 @@
+#include <windows.h>
+#include <iostream.h>
+#include <time.h>
+#include <fstream.h>
+#include "Game_private.h"
+
+void Raand();
+void Display();                 //display background
+void find();                  //find position
+void snake(int,int,int,int);
+void put();                 //put position
+void whether_to_put();
+void Timer(HWND hwnd,WPARAM wparam);
+void eatcheck();
+void boundary();
+void convert(int p,char c[3]);
+void OnPause();
+void OnSpeed();
+
+LRESULT CALLBACK WindowProcedure (HWND, UINT, WPARAM, LPARAM);
+
+char szClassName[] = "WindowsApp";                //Make the class name into a global variable
+int x,y;            //for the feed...
+int xs=450,ys=250,xf,yf=250,len=150;
+short int idir=1,fdir[40]; 
+short int turn=0,tid;
+int regx[40],regy[40];
+short int p=0,hs=0,times=0,speed=100;
+char c[3],h[3];
+BOOL pause=FALSE,todo=FALSE,a=FALSE,sound=TRUE,score=FALSE;
+
+     HDC hdc;
+     HBRUSH hbr;
+     HGDIOBJ hold;
+     HPEN hpen;
+     PAINTSTRUCT ps; 
+     HWND hwnd;
+     HMENU hmenu;
+     
+void OnPaint(HWND hwnd)
+{
+     hdc=BeginPaint(hwnd,&ps);
+     Display();
+     xf=xs+len;
+     snake(xs,ys,xf,yf);
+     find();
+     put();
+     SetTimer(hwnd,1,speed,NULL);
+} 
+
+int WINAPI WinMain (HINSTANCE hThisInstance,
+                    HINSTANCE hPrevInstance,
+                    LPSTR lpszArgument,
+                    int nFunsterStil)
+
+{             
+    MSG messages;            
+    WNDCLASSEX wincl;       
+    
+    wincl.hInstance = hThisInstance;
+    wincl.lpszClassName = szClassName;
+    wincl.lpfnWndProc = WindowProcedure;      
+    wincl.style = CS_HREDRAW|CS_VREDRAW;                 
+    wincl.cbSize = sizeof (WNDCLASSEX);
+    wincl.hIcon = LoadIcon (hThisInstance, MAKEINTRESOURCE(IDI_GAME));
+    wincl.hIconSm = LoadIcon (hThisInstance, MAKEINTRESOURCE(IDI_GAME));
+    wincl.hCursor = LoadCursor (NULL, IDC_HAND);
+    wincl.lpszMenuName = szClassName;                 
+    wincl.cbClsExtra = 0;                      
+    wincl.cbWndExtra = 0;                          
+    wincl.hbrBackground = CreateSolidBrush(RGB(200,200,200));
+
+    if (!RegisterClassEx (&wincl))
+    return 0;
+    
+    hwnd = CreateWindowEx (
+           0,                   /* Extended possibilites for variation */
+           szClassName,         /* Classname */
+           "EROIN'S SNAKEXENZIA",       /* Title Text */
+           WS_OVERLAPPEDWINDOW, /* default window */
+           CW_USEDEFAULT,       /* Windows decides the position */
+           CW_USEDEFAULT,       /* where the window ends up on the screen */
+           CW_USEDEFAULT,                 /* The programs width */
+           CW_USEDEFAULT,                 /* and height in pixels */
+           NULL,        
+           NULL,                /* No menu */
+           hThisInstance,       /* Program Instance handler */
+           NULL                 /* No Window Creation data */
+           );
+    
+    MessageBox(0,"Eroin's copyright,\nAll rights reserved!","Caution!",MB_ICONEXCLAMATION);
+    
+    hmenu=LoadMenu(hThisInstance,szClassName);
+    SetMenu(hwnd,hmenu);
+    
+    ShowWindow (hwnd, SW_SHOWNORMAL);
+    UpdateWindow(hwnd);
+
+    while (GetMessage (&messages, NULL, 0, 0))
+    {
+        TranslateMessage(&messages);
+        DispatchMessage(&messages);
+    }
+    return messages.wParam;
+}
+
+LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wparam, LPARAM lParam)
+{
+    switch (message)                  
+    {
+        case WM_CREATE:
+             {
+                 fstream *fs=new fstream;
+                 fs->open("High Score.bak",ios::in|ios::binary);
+                 fs->read((char *)& hs,sizeof(hs));
+                 fs->close();
+                 delete fs;
+                 break;
+             }
+                
+        case WM_DESTROY:
+                 SelectObject(hdc,hold);
+                 DeleteObject(hbr);
+                 KillTimer(hwnd,1);
+                 KillTimer(hwnd,2);
+                 EndPaint(hwnd,&ps);
+                 DestroyMenu(hmenu);
+                 MessageBox(0,"Un Prodotto di EROIN!","Thanks for playing!",MB_ICONERROR);
+                 PostQuitMessage (0);       
+                 break;
+        
+        case WM_PAINT:
+                 OnPaint(hwnd);
+                 break;
+                 
+        case WM_TIMER:
+                 Timer(hwnd,wparam);
+                 break;
+                 
+        case WM_COMMAND:
+             switch(wparam)
+             {
+             case IDM_GAMEPAUSE:
+             OnPause();
+             break;
+             
+             case IDM_GAMEPLAY:
+             OnPause();
+             break;
+             
+             case IDM_SOUNDON:
+             sound=TRUE;
+             CheckMenuItem(hmenu,IDM_SOUNDON,MF_CHECKED);
+             CheckMenuItem(hmenu,IDM_SOUNDOFF,MF_UNCHECKED);
+             break;
+             
+             case IDM_SOUNDOFF:
+             sound=FALSE;
+             CheckMenuItem(hmenu,IDM_SOUNDON,MF_UNCHECKED);
+             CheckMenuItem(hmenu,IDM_SOUNDOFF,MF_CHECKED);
+             break;
+             
+             case IDM_GAMESPEEDFAST:
+             speed=50;
+             OnSpeed();
+             CheckMenuItem(hmenu,IDM_GAMESPEEDFAST,MF_CHECKED);
+             CheckMenuItem(hmenu,IDM_GAMESPEEDMEDIUM,MF_UNCHECKED);
+             CheckMenuItem(hmenu,IDM_GAMESPEEDSLOW,MF_UNCHECKED);
+             break;
+             
+             case IDM_GAMESPEEDMEDIUM:
+             speed=100;
+             OnSpeed();
+             CheckMenuItem(hmenu,IDM_GAMESPEEDFAST,MF_UNCHECKED);
+             CheckMenuItem(hmenu,IDM_GAMESPEEDMEDIUM,MF_CHECKED);
+             CheckMenuItem(hmenu,IDM_GAMESPEEDSLOW,MF_UNCHECKED);
+             break;
+             
+             case IDM_GAMESPEEDSLOW:
+             speed=150;
+             OnSpeed();
+             CheckMenuItem(hmenu,IDM_GAMESPEEDFAST,MF_UNCHECKED);
+             CheckMenuItem(hmenu,IDM_GAMESPEEDMEDIUM,MF_UNCHECKED);
+             CheckMenuItem(hmenu,IDM_GAMESPEEDSLOW,MF_CHECKED);
+             break;
+             
+             case IDM_SHOWHS:
+             score=TRUE;
+             EnableMenuItem(hmenu,IDM_SHOWHS,MF_GRAYED);
+             EnableMenuItem(hmenu,IDM_HIDEHS,MF_ENABLED);
+             break;
+             
+             case IDM_HIDEHS:
+             score=FALSE;
+             EnableMenuItem(hmenu,IDM_HIDEHS,MF_GRAYED);
+             EnableMenuItem(hmenu,IDM_SHOWHS,MF_ENABLED);
+             break;
+             
+             case IDM_FILENEW:
+             xs=450;ys=250;yf=250;len=150,idir=1;
+             turn=0;p=0;hs=0;times=0;speed=100;
+             BOOL pause=FALSE,todo=FALSE,a=FALSE,sound=TRUE,score=FALSE;
+             GetClientRect(hwnd,&ps.rcPaint);
+             InvalidateRect(hwnd,&ps.rcPaint,TRUE);
+             break;
+             }
+             
+        case WM_KEYDOWN:
+             switch(wparam)
+             {
+                           case 'S':
+                           case VK_DOWN:
+                           if(turn<40&&fdir[turn-1]!=4&&todo!=1) 
+                           {  
+                           KillTimer(hwnd,1);
+                           regx[turn]=xf;
+                           regy[turn]=yf;
+                           fdir[turn]=2;
+                           turn+=1;
+                           todo=TRUE;
+                           SetTimer(hwnd,2,speed,NULL);
+                           }
+                           break;
+                           
+                           case 'A':
+                           case VK_LEFT:
+                           if(turn<40&&fdir[turn-1]!=1&&todo!=1) 
+                           {  
+                           KillTimer(hwnd,1);
+                           regx[turn]=xf;
+                           regy[turn]=yf;
+                           fdir[turn]=3;
+                           turn++;
+                           todo=TRUE;
+                           SetTimer(hwnd,2,speed,NULL);
+                           }
+                           break;
+                           
+                           case 'W':
+                           case VK_UP:
+                           if(turn<40&&fdir[turn-1]!=2&&todo!=1) 
+                           {  
+                           KillTimer(hwnd,1);
+                           regx[turn]=xf;
+                           regy[turn]=yf;
+                           fdir[turn]=4;
+                           turn++;
+                           todo=TRUE;
+                           SetTimer(hwnd,2,speed,NULL);
+                           }
+                           break;
+                           
+                           case 'D':
+                           case VK_RIGHT:
+                           if(turn<40&&fdir[turn-1]!=3&&todo!=1) 
+                           {  
+                           KillTimer(hwnd,1);
+                           regx[turn]=xf;
+                           regy[turn]=yf;
+                           fdir[turn]=1;
+                           turn++;
+                           todo=TRUE;
+                           SetTimer(hwnd,2,speed,NULL);
+                           }
+                           break;
+                           
+                           case VK_SPACE:
+                           case VK_ESCAPE:
+                           OnPause();
+                           break;
+                           
+             }   
+                 
+        default:                      
+            return DefWindowProc (hwnd, message, wparam, lParam);
+    }
+
+    return 0;
+}
+int xm,ym;
+void snake(int xs,int ys,int xf,int yf)
+{
+     hpen=CreatePen(PS_SOLID,10,RGB(0,0,0));
+     hold=SelectObject(hdc,hpen);
+     MoveToEx(hdc,xs,ys,NULL);
+     LineTo(hdc,xf,yf);
+     for(int i=xf-1;i<=xf+1;i++)
+     {
+     for(int j=yf-1;j<=yf+1;j++)
+     SetPixel(hdc,i,j,RGB(0,255,0));
+     }
+     SelectObject(hdc,hold);
+     DeleteObject(hpen);
+}
+void Raand()
+{
+     srand(time(NULL));
+     x=(rand()*rand())%750;
+     y=(rand()*rand())%750;
+}
+void Display()
+{
+     hbr=CreateSolidBrush(RGB(200,200,200));
+     hold=SelectObject(hdc,hbr);
+     GetClientRect(hwnd,&ps.rcPaint);
+     Rectangle(hdc,ps.rcPaint.left,ps.rcPaint.top,ps.rcPaint.right,ps.rcPaint.bottom);              //0,0,1355,700   //0,0,999,485
+     SelectObject(hdc,hold);
+     DeleteObject(hbr);
+     
+     if(p)
+     {
+     convert(p,c);
+     TextOut(hdc,875,15,"Score",5);
+     TextOut(hdc,950,15,c,3);
+     }
+     else
+     {
+     TextOut(hdc,875,15,"Score",5);
+     TextOut(hdc,950,15,"0",2);
+     }
+     
+     fstream fs;
+     if(p>hs)
+     {    
+     fs.open("High Score.bak",ios::out|ios::binary);
+     fs.write((char *)& p,sizeof(p));
+     fs.close();
+     hs=p;
+     if(times<300)
+     SetTimer(hwnd,3,1,NULL);
+     }
+     if(score)
+     {
+     convert(hs,h);
+     TextOut(hdc,875,40,"High Score",10);
+     TextOut(hdc,950,40,h,3);
+     }
+}
+void find()
+{
+     Raand();
+     while(x<ps.rcPaint.left||y<ps.rcPaint.top||x>ps.rcPaint.right|y>ps.rcPaint.bottom)
+     Raand();
+}
+void convert(int p,char c[3])              //int to string
+{
+     int i=1;
+     int temp=p;
+     while(temp!=0)
+     {
+     c[i]=(temp%10)+48;
+     i--;
+     temp/=10;
+     }
+}
+void OnPause()
+{
+     pause=!pause;
+     if(pause)
+     {
+     KillTimer(hwnd,1);
+     KillTimer(hwnd,2);
+     EnableMenuItem(hmenu,IDM_GAMEPAUSE,MF_GRAYED);
+     EnableMenuItem(hmenu,IDM_GAMEPLAY,MF_ENABLED);
+     }
+     else
+     {
+     EnableMenuItem(hmenu,IDM_GAMEPLAY,MF_GRAYED);
+     EnableMenuItem(hmenu,IDM_GAMEPAUSE,MF_ENABLED);
+     if(tid==1)
+     SetTimer(hwnd,1,speed,NULL);
+     else if(tid==2)
+     SetTimer(hwnd,2,speed,NULL);
+     }
+}    
+void OnSpeed()
+{
+     KillTimer(hwnd,1);
+     KillTimer(hwnd,2);
+     if(!pause)
+     {
+     if(tid==1)
+     SetTimer(hwnd,1,speed,NULL);
+     else if(tid==2)
+     SetTimer(hwnd,2,speed,NULL);
+     }
+}                          
+void put()
+{
+     hbr=CreateSolidBrush(RGB(0,0,0));
+     hold=SelectObject(hdc,hbr);
+     Rectangle(hdc,x,y,x+15,y+15);
+     SelectObject(hdc,hold);
+     DeleteObject(hbr);
+}
+void whether_to_put()
+{
+     Display();
+     a=!a;
+     if(a)
+     put();
+}
+void eatcheck()
+{
+     if((xf>x&&xf<x+15)&&(yf>y&&yf<y+15))
+     {
+     if(sound)
+     PlaySound("sound.wav",0,SND_ASYNC);
+     len+=50;
+     if(idir==1)
+     xs-=50;
+     else if(idir==2)
+     ys-=50;
+     else if(idir==3)
+     xs+=50;
+     else if(idir==4)
+     ys+=50;
+     p++;
+     find();
+     put();
+     }
+} 
+void boundary()
+{
+     int flag=0;
+     if(xf==0||yf==ps.rcPaint.top||xf==1010||yf==500||yf==ps.rcPaint.bottom)
+     flag=1;
+     for(int i=0;i<turn-2;i++)
+     {
+     if(((xf>=regx[i]&&xf<=regx[i+1])&&(yf==regy[i]))||((xf>=xs&&xf<=regx[0])&&yf==ys))       //moving right
+     flag=1;
+     else if(((xf<=regx[i]&&xf>=regx[i+1])&&(yf==regy[i]))||((xf<=xs&&xf>=regx[0])&&yf==ys))
+     flag=1;
+     else if(((yf>=regy[i]&&yf<=regy[i+1])&&(xf==regx[i]))||((yf>=ys&&yf<=regy[0]&&xf==xs)))
+     flag=1;
+     else if(((yf<=regy[i]&&yf>=regy[i+1])&&(xf==regx[i]))||((yf<=ys&&yf>=regy[0]&&xf==xs)))
+     flag=1;
+     }
+     if(flag==1)
+     {
+     if(sound)
+     PlaySound("chord.wav",0,SND_ASYNC);
+     KillTimer(hwnd,2);
+     MessageBox(0,"Thanks for Playing!","GAME OVER!",MB_OK);
+     SelectObject(hdc,hold);
+     DeleteObject(hbr);
+     KillTimer(hwnd,1);
+     EndPaint(hwnd,&ps);   
+     PostQuitMessage(1);
+     }
+}
+void Timer(HWND hwnd,WPARAM wparam)
+{
+     tid=wparam;
+     switch(wparam)
+     {
+            case 1:                                 //horizontal or vertical
+            whether_to_put();
+            todo=FALSE;
+            if(idir==1)
+            {
+                       xs+=10;
+                       xf=xs+len;
+            }
+            else if(idir==3)
+            {
+                       xs-=10;
+                       xf=xs-len;
+            }
+            else if(idir==2)
+            {
+                       ys+=10;
+                       yf=ys+len;
+            }
+            else if(idir==4)
+            {
+                       ys-=10;
+                       yf=ys-len;
+            }
+            snake(xs,ys,xf,yf);
+            eatcheck();
+            boundary();
+            break;
+            
+            case 2:
+            whether_to_put();
+            todo=FALSE;
+            if(idir==1)
+            xs+=10;
+            else if(idir==3)
+            xs-=10;
+            else if(idir==2)
+            ys+=10;
+            else if(idir==4)
+            ys-=10;
+            snake(xs,ys,regx[0],regy[0]);
+            
+            int draw;
+            for(draw=0;draw<turn-1;draw++)
+            snake(regx[draw],regy[draw],regx[draw+1],regy[draw+1]);
+            
+            if(fdir[turn-1]==2)
+            yf+=10;
+            else if(fdir[turn-1]==3)
+            xf-=10;
+            else if(fdir[turn-1]==4)
+            yf-=10;
+            else if(fdir[turn-1]==1)
+            xf+=10;
+            snake(regx[turn-1],regy[turn-1],xf,yf);
+            eatcheck();
+            boundary();
+            if(xs==regx[0]&&ys==regy[0])
+            {
+                        idir=fdir[0];
+                        for(draw=0;draw<turn-1;draw++)
+                        {
+                        fdir[draw]=fdir[draw+1];
+                        regx[draw]=regx[draw+1];
+                        regy[draw]=regy[draw+1];
+                        }
+                        turn-=1;
+                        if(turn==0)
+                        {
+                        KillTimer(hwnd,2);
+                        SetTimer(hwnd,1,speed,NULL);
+                        }
+            }
+            break;
+            
+            case 3:
+            if(times<300)
+            {
+            times++;
+            TextOut(hdc,250,450,"HIGHEST SCORE!",14);
+            }
+            else
+            KillTimer(hwnd,3);
+            break;
+            }
+}

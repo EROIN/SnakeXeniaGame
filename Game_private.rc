@@ -1,0 +1,71 @@
+/* THIS FILE WILL BE OVERWRITTEN BY DEV-C++ */
+/* DO NOT EDIT! */
+
+1000 ICON DISCARDABLE "Game.ico"
+300 BITMAP DISCARDABLE "8ball1.bmp"
+301 BITMAP DISCARDABLE "fd1.bmp"
+302 BITMAP DISCARDABLE "sc4.bmp"
+303 BITMAP DISCARDABLE "b6.bmp"
+
+#include "Game_private.h"
+
+WINDOWSAPP MENU DISCARDABLE
+BEGIN
+     POPUP "&Game"
+     BEGIN
+          MENUITEM "&Play\tSpace",IDM_GAMEPLAY,GRAYED
+          MENUITEM "Pa&use\tSpace",IDM_GAMEPAUSE
+          MENUITEM "&Show HighScore\tCtrl+H",IDM_SHOWHS
+          MENUITEM "&Hide HighScore\tCtrl+H",IDM_HIDEHS,GRAYED
+          POPUP "&Big Food Time Gap"
+          BEGIN
+               MENUITEM "&Long",IDM_BFLONG
+               MENUITEM "&Medium",IDM_BFMEDIUM,CHECKED
+               MENUITEM "&Short",IDM_BFSHORT
+          END
+          POPUP "&Level 2 Starts at"
+          BEGIN
+               MENUITEM "Score=20",IDM_SCORE20
+               MENUITEM "Score=&35",IDM_SCORE30,CHECKED
+               MENUITEM "Score=&60",IDM_SCORE40
+          END
+          MENUITEM SEPARATOR
+          POPUP "&Speed\tCtrl+P"
+          BEGIN
+               MENUITEM "&Fast",IDM_GAMESPEEDFAST
+               MENUITEM "&Medium",IDM_GAMESPEEDMEDIUM,CHECKED
+               MENUITEM "&Slow",IDM_GAMESPEEDSLOW
+          END
+          POPUP "S&ound"
+          BEGIN
+               MENUITEM "O&n",IDM_SOUNDON,CHECKED
+               MENUITEM "O&ff",IDM_SOUNDOFF
+          END
+     END
+     POPUP "&File"
+     BEGIN
+          MENUITEM "&New Game\tCtrl+N",IDM_FILENEW
+          MENUITEM "&Open\tCtrl+O",IDM_FILEOPEN
+          MENUITEM "&Save\tCtrl+S",IDM_FILESAVE
+          MENUITEM "S&ave as...",IDM_FILESAVEAS
+          MENUITEM SEPARATOR
+          MENUITEM "&Exit\tCtrl+Q",IDM_FILEEXIT
+     END
+     POPUP "&Help"
+     BEGIN
+          MENUITEM "&About The Program",IDM_HELPABOUT
+          MENUITEM "&How To Play",IDM_HELPHOW
+          MENUITEM "&No More Help!",IDM_HELPNO
+     END
+END
+WINDOWSAPP ACCELERATORS DISCARDABLE
+BEGIN
+     "^N",IDM_FILENEW,ASCII,NOINVERT
+     "^Q",IDM_FILEEXIT,ASCII,NOINVERT
+     "^P",ID_GAMESPEED,ASCII,NOINVERT
+     "^O",IDM_FILEOPEN,ASCII,NOINVERT
+     "^S",IDM_FILESAVE,ASCII,NOINVERT
+     "^H",IDM_HIGH,ASCII,NOINVERT
+END
+1001 WAVE DISCARDABLE "sound.wav"
+1002 WAVE DISCARDABLE "chord.wav"
