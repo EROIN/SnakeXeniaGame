@@ -10,3 +10,4 @@ The game has two levels and ships with the ability to save the current game, ope
 
 ### How to Run?
 SImply download or clone the repo and run the Game.exe file. Enjoy!!
+Note: The screenshots in this repo are old. The game is way more colorful and better now !!
